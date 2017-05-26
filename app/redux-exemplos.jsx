@@ -1,4 +1,5 @@
 import {createStore,combineReducers} from 'redux';
+import axios from 'axios';
 
 console.log('Redux!');
 
@@ -89,17 +90,68 @@ function removeTVShow(tvShowId){
     }
 }
 
+// Map
+//------------------------------------------
+
+function mapReducer(state={isFetching:false,url:undefined}, action){
+    switch(action.type){
+        case 'START_LOCATION_FETCH':
+            return {
+                isFetching: true,
+                url:undefined
+            };
+        case 'COMPLETE_LOCATION_FETCH':
+            return {
+                isFetching:false,
+                url:action.url
+            };
+        default:
+            return state;
+    };
+};
+
+function startLocationFetch(){
+    return {
+        type: 'START_LOCATION_FETCH'
+    };
+};
+
+function completeLocationFetch(url){
+    return {
+        type: 'COMPLETE_LOCATION_FETCH',
+        url: url
+    };
+};
+
+function fetchLocation(){
+    exampleStore.dispatch(startLocationFetch());
+    axios.get('https://ipinfo.io?token=de0aee17b050cc').then((response)=>{
+        debugger;
+        var location = response.data.loc;
+        var baseUrl = 'http://maps.google.com?q=';
+        exampleStore.dispatch(completeLocationFetch(baseUrl+location))
+    });
+};
+
 var reducer = combineReducers({
     name: nameReducer,
     hobbies: hobbiesReducer,
-    tvShows: TVShowsReducer
+    tvShows: TVShowsReducer,
+    map: mapReducer
 });
 var exampleStore = createStore(reducer);
 
 console.log(exampleStore.getState());
 
+fetchLocation();
+
 exampleStore.subscribe(()=>{
     console.log(exampleStore.getState());
+    if(exampleStore.getState().map.isFetching){
+        document.getElementById('app').innerHTML = 'Loading...';
+    } else if(exampleStore.getState().map.url){
+        document.getElementById('app').innerHTML = '<a href="'+exampleStore.getState().map.url+'" target="__blank">Veja sua localização</a>';
+    }
 });
 
 exampleStore.dispatch(changeName('Henrique'));
@@ -118,6 +170,7 @@ TVShows.forEach((TVShow)=>{
 });
 
 exampleStore.dispatch(removeTVShow(1));
+
 
 
 
